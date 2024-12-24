@@ -9,7 +9,7 @@ import folium
 from django.conf import settings
 
 def formatTime(seconds):
-        return humanize.precisedelta(seconds, format="%0.0f")
+    return humanize.precisedelta(seconds, format="%0.0f")
 
 def formatDistance(meters):
     return humanize.intcomma(meters) + " meters"
