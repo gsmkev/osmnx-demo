@@ -3,6 +3,10 @@ cache/
 images/
 data/
 
+# Django
+**/__init__.py
+media/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
