@@ -7,6 +7,203 @@
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.24.0/dist/bootstrap-table.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+</head>
+<body class="container">
+    <div class="content">
+        <h1 class="my-4 text-center">Route Comparison</h1>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered" 
+                   data-toggle="table" 
+                   data-locale="en-US">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col" data-sortable="true">Metric</th>
+                        <th scope="col" data-sortable="true">Route 1</th>
+                        <th scope="col" data-sortable="true">Route 2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><i class="bi bi-arrows-move"></i> Length</td>
+                        <td>{{ route1_length }}</td>
+                        <td>{{ route2_length }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="bi bi-clock"></i> Time</td>
+                        <td>{{ route1_time }}</td>
+                        <td>{{ route2_time }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="my-4">
+            <h2 class="h4 text-center"><i class="bi bi-map"></i> Route Map</h2>
+            <iframe src="{{ map_url }}" class="rounded"></iframe>
+        </div>
+        <div class="text-center my-4">
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#selectModal">
+                Select Origin and Destination
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="selectModal" tabindex="-1" aria-labelledby="selectModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" id="selectModalLabel">Select Origin and Destination</h5>
+                    <button type="button" class="close text-light" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h1 class="h4">Select Origin and Destination</h1>
+                    <div id="map" style="height: 300px;"></div>
+                    <form method="post" class="mt-3" id="routeForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="origin" id="origin">
+                        <input type="hidden" name="destination" id="destination">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <button type="button" class="btn btn-secondary" id="clearMarkers">Clear Markers</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+        <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="bi bi-x-circle-fill me-5"></i>
+                    Please select both origin and destination points.
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.24.0/dist/bootstrap-table.min.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" />
+
+
+    <!-- Leaflet Map -->
+    <script>
+        var map;
+        var originMarker, destinationMarker;
+
+        $('#selectModal').on('shown.bs.modal', function () {
+            if (!map) {
+                map = L.map('map').setView([-25.369323, -57.633488], 13);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                map.on('click', function(e) {
+                    if (!originMarker) {
+                        originMarker = L.marker(e.latlng).addTo(map);
+                        document.getElementById('origin').value = e.latlng.lat + ',' + e.latlng.lng;
+                    } else if (!destinationMarker) {
+                        destinationMarker = L.marker(e.latlng).addTo(map);
+                        document.getElementById('destination').value = e.latlng.lat + ',' + e.latlng.lng;
+                    }
+                });
+            } else {
+                setTimeout(function() {
+                    map.invalidateSize();
+                }, 10);
+            }
+        });
+
+        $('#selectModal').on('hidden.bs.modal', function () {
+            if (map) {
+                map.remove();
+                map = null;
+                originMarker = null;
+                destinationMarker = null;
+            }
+        });
+
+        $('#clearMarkers').on('click', function () {
+            if (originMarker) {
+                map.removeLayer(originMarker);
+                originMarker = null;
+                document.getElementById('origin').value = '';
+            }
+            if (destinationMarker) {
+                map.removeLayer(destinationMarker);
+                destinationMarker = null;
+                document.getElementById('destination').value = '';
+            }
+        });
+
+        $('#routeForm').on('submit', function (e) {
+            if (!document.getElementById('origin').value || !document.getElementById('destination').value) {
+                e.preventDefault();
+                var toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                toast.show();
+            }
+        });
+    </script>
+
+    <!-- Custom CSS for dark theme -->
+    <style>
+        .modal-content {
+            background-color: #343a40;
+            color: #ffffff;
+        }
+        .modal-header .close {
+            color: #ffffff;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+        }
+        .form-control {
+            background-color: #495057;
+            color: #ffffff;
+            border: 1px solid #6c757d;
+        }
+        .form-control:focus {
+            background-color: #495057;
+            color: #ffffff;
+            border-color: #80bdff;
+        }
+        .toast-container {
+            top: 1rem;
+            right: 1rem;
+        }
+        .toast {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+        .toast-body i {
+            font-size: 1.5rem;
+        }
+    </style>
     <style>
         body {
             background-color: #121212;
@@ -48,43 +245,5 @@
             flex: 1;
         }
     </style>
-</head>
-<body class="container">
-    <div class="content">
-        <h1 class="my-4 text-center">Route Comparison</h1>
-        <div class="table-responsive">
-            <table class="table table-striped table-hover table-bordered" 
-                   data-toggle="table" 
-                   data-locale="en-US">
-                <thead class="thead-dark">
-                    <tr>
-                        <th scope="col" data-sortable="true">Metric</th>
-                        <th scope="col" data-sortable="true">Route 1</th>
-                        <th scope="col" data-sortable="true">Route 2</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><i class="bi bi-arrows-move"></i> Length</td>
-                        <td>{{ route1_length }}</td>
-                        <td>{{ route2_length }}</td>
-                    </tr>
-                    <tr>
-                        <td><i class="bi bi-clock"></i> Time</td>
-                        <td>{{ route1_time }}</td>
-                        <td>{{ route2_time }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="my-4">
-            <h2 class="h4 text-center"><i class="bi bi-map"></i> Route Map</h2>
-            <iframe src="{{ map_url }}" class="rounded"></iframe>
-        </div>
-    </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.24.0/dist/bootstrap-table.min.js"></script>
 </body>
 </html>
