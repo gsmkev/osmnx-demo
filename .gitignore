@@ -1,6 +1,7 @@
 # OSMNX - Open Street Map
 cache/
 images/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
