@@ -1,3 +1,4 @@
+from time import perf_counter
 from django.shortcuts import render
 from django.views import View
 import multiprocessing as mp
@@ -7,6 +8,8 @@ import humanize
 import os
 import folium
 from django.conf import settings
+import multiprocessing as mp
+import math
 
 def formatTime(seconds):
     return humanize.precisedelta(seconds, format="%0.0f")
@@ -21,9 +24,18 @@ def mapShortestPath(origin, destination):
     # cache the data to disk so it doesn't have to be downloaded again
     ox.settings.use_cache = True
 
+    places = [
+        "Lambare, Paraguay",
+        "Asuncion, Paraguay",
+        "San Lorenzo, Paraguay",
+        "Fernando de la Mora, Paraguay",
+        "Mariano Roque Alonso, Paraguay",
+    ]
+
     # get the street network for a place
     G = ox.graph.graph_from_place(
-        "Lambare, Paraguay", 
+        places,
+        retain_all=True,
         network_type="drive",
         truncate_by_edge=True,
     )
@@ -64,7 +76,7 @@ class RouteView(View):
         return self.handle_request(request)
 
     def handle_request(self, request):
-        
+        start_time = perf_counter()
 
         # set the origin and destination points
         if request.method == 'POST':
@@ -80,7 +92,17 @@ class RouteView(View):
         # create a folium map centered around the origin
         m = folium.Map(location=origin, zoom_start=13)
 
-        route1_coords, route2_coords, route1_length, route2_length, route1_time, route2_time = mapShortestPath(origin, destination)
+        try:
+            route1_coords, route2_coords, route1_length, route2_length, route1_time, route2_time = mapShortestPath(origin, destination)
+        except TypeError as e:
+            # Check which variable is None
+            result = mapShortestPath(origin, destination)
+            variables = ['route1_coords', 'route2_coords', 'route1_length', 'route2_length', 'route1_time', 'route2_time']
+            for i, var in enumerate(result):
+                if var is None:
+                    raise TypeError(f"{variables[i]} is None") from e
+            # If we can't identify which specific variable is None, raise the original error
+            raise
 
         # Create feature groups for each route
         route1_group = folium.FeatureGroup(name='Shortest Distance Route')
@@ -114,5 +136,9 @@ class RouteView(View):
             'center_coords': [-25.3466, -57.6065],
             'map_url': os.path.join(settings.MEDIA_URL, 'route_map.html')
         }
+
+        end_time = perf_counter()
+
+        context['execution_time'] = formatTime(end_time - start_time)
 
         return render(request, 'route.html', context)

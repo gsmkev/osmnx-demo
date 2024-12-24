@@ -79,7 +79,7 @@
 
     <!-- Toast Notifications -->
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
-        <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+        <div id="infoToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
             <div class="d-flex">
                 <div class="toast-body d-flex align-items-center">
                     <i class="bi bi-x-circle-fill me-2"></i>
@@ -92,6 +92,14 @@
                 <div class="toast-body d-flex align-items-center">
                     <i class="bi bi-check-circle-fill me-2"></i>
                     Page loaded successfully.
+                </div>
+            </div>
+        </div>
+        <div id="loadTimeToast" class="toast align-items-center text-dark bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="bi bi-clock-fill me-2"></i>
+                    Page loaded in {{ execution_time }}.
                 </div>
             </div>
         </div>
@@ -110,7 +118,9 @@
 
         window.addEventListener('DOMContentLoaded', function () {
             let successToast = new bootstrap.Toast(document.getElementById('successToast'));
+            let loadTimeToast = new bootstrap.Toast(document.getElementById('loadTimeToast'));
             successToast.show();
+            loadTimeToast.show();
         });
 
         document.getElementById('selectModal').addEventListener('shown.bs.modal', function () {
@@ -149,7 +159,7 @@
         document.getElementById('routeForm').addEventListener('submit', function (e) {
             if (!document.getElementById('origin').value || !document.getElementById('destination').value) {
                 e.preventDefault();
-                let toast = new bootstrap.Toast(document.getElementById('errorToast'));
+                let toast = new bootstrap.Toast(document.getElementById('infoToast'));
                 toast.show();
             }
         });
